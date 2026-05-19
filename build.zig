@@ -122,4 +122,40 @@ pub fn build(b: *std.Build) void {
         const run_c = b.addRunArtifact(c_test);
         integration_step.dependOn(&run_c.step);
     }
+
+    // Standalone binary able to drop-in replace oodle-helper from XivMitMLatencyMitigator
+    const helper_step = b.step("helper", "Build and output the drop-in oodle-helper binary");
+    const helper = b.addExecutable(.{
+        .name = "daigoro",
+        .version = version,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "daigoro", .module = lib_mod },
+            },
+        }),
+    });
+
+    const install_helper = b.addInstallArtifact(helper, .{});
+    helper_step.dependOn(&install_helper.step);
+
+    const helper_tests = b.addTest(.{
+        .root_module = helper.root_module,
+    });
+
+    const run_helper_tests = b.addRunArtifact(helper_tests);
+    test_step.dependOn(&run_helper_tests.step);
+
+    // Default run step, ie the oodle-helper, we don't always build it but it's the only thing to run
+    const run_step = b.step("run", "Run the oodle-helper application");
+    const run_cmd = b.addRunArtifact(helper);
+
+    run_cmd.step.dependOn(b.getInstallStep());
+    if (b.args) |args| {
+        run_cmd.addArgs(args);
+    }
+
+    run_step.dependOn(&run_cmd.step);
 }
