@@ -1,7 +1,7 @@
 [tools]
 python = "3.14"
-zig = "0.14"
-zls = "0.14"
+zig = "0.15"
+zls = "0.15"
 
 [tasks.sigs]
 description = "Run sigtool to debug an exe's offsets or generate Zig signature patterns"

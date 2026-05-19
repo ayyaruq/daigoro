@@ -157,8 +157,8 @@ test "OodleAllocator stress test" {
     var opa = OodleAllocator.init(std.testing.allocator);
     const alloc = opa.allocator();
 
-    var list = std.ArrayList([]u8).init(std.testing.allocator);
-    defer list.deinit();
+    var list: std.ArrayList([]u8) = .empty;
+    defer list.deinit(std.testing.allocator);
 
     var prng = std.Random.DefaultPrng.init(0x1234);
     const random = prng.random();
@@ -167,7 +167,7 @@ test "OodleAllocator stress test" {
     for (0..1000) |_| {
         const size = random.intRangeAtMost(usize, 1, 1024 * 1024);
         const mem = try alloc.alloc(u8, size);
-        try list.append(mem);
+        try list.append(std.testing.allocator, mem);
 
         if (list.items.len > 10) {
             const index = random.intRangeLessThan(usize, 0, list.items.len);
