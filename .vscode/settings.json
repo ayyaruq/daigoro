@@ -1,0 +1,12 @@
+{
+  "files.exclude": {
+    ".vscode/mise-tools": true,
+    "**/*.exe": true,
+    "**/.zig-cache": true,
+    "**/zig-out": true,
+    "**/__pycache__": true,
+  },
+  "mise.configureExtensionsUseSymLinks": true,
+  "zig.formattingProvider": "zls",
+  "zig.zls.enabled": "on",
+}

@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "editorconfig.editorconfig",
+    "hverlin.mise-vscode",
+    "ziglang.vscode-zig",
+  ],
+
+  "unwantedRecommendations": [
+  ]
+}

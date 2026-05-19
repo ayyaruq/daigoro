@@ -1,0 +1,25 @@
+[tools]
+python = "3.14"
+zig = "0.14"
+zls = "0.14"
+
+[tasks.sigs]
+description = "Run sigtool to debug an exe's offsets or generate Zig signature patterns"
+quiet = true
+usage = '''
+arg "<file>" help="Path to exe file to scan" default="ffxiv_dx11.exe"
+flag "--zig" help="Enable Zig signature output"
+flag "--hex" help="Format Zig signature output as hex strings"
+'''
+run = '''
+if [ "${usage_hex}" = "true" ] && [ "${usage_zig}" != "true" ]; then
+  echo "Error: The --hex flag requires the --zig flag to be set."
+  exit 1
+fi
+
+FLAGS=""
+[ "${usage_zig}" = "true" ] && FLAGS="$FLAGS --zig"
+[ "${usage_hex}" = "true" ] && FLAGS="$FLAGS --hex"
+
+python scripts/sigtool.py "${usage_file}" $FLAGS
+'''
