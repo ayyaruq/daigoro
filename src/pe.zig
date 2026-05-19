@@ -1,4 +1,5 @@
 const std = @import("std");
+const cache = @import("cache.zig");
 const win32 = @import("win32.zig");
 const internal = @import("log.zig");
 const ImageError = @import("errors.zig").ImageError;
@@ -9,6 +10,7 @@ pub const PeImage = struct {
     gpa: std.mem.Allocator,
     data: []align(std.heap.page_size_min) u8,
     data_size: usize,
+    data_cache: ?cache.CacheEntry,
     sections: []const win32.ImageSectionHeader,
 
     // Metadata for the domain-specific logic to use
@@ -17,7 +19,7 @@ pub const PeImage = struct {
     reloc_va: u32,
     reloc_size: u32,
 
-    pub fn load(exe_path: []const u8, allocator: std.mem.Allocator) ImageError!PeImage {
+    pub fn load(exe_path: []const u8, cache_dir: ?[]const u8, allocator: std.mem.Allocator) ImageError!PeImage {
         const exe = std.fs.cwd().openFile(exe_path, .{}) catch |err| {
             return switch (err) {
                 error.FileNotFound => error.FileNotFound,
@@ -34,6 +36,8 @@ pub const PeImage = struct {
             };
         };
         errdefer std.posix.munmap(raw_file);
+
+        const file_hash = cache.hashFile(raw_file);
 
         // Validate DOS header magic ("MZ") before dereferencing anything else.
         if (raw_file.len < @sizeOf(win32.ImageDosHeader)) return error.FileTooSmall;
@@ -71,6 +75,9 @@ pub const PeImage = struct {
         };
         errdefer std.posix.munmap(image);
 
+        // Check the cache first.
+        const cached = cache.load(cache_dir, file_hash);
+
         // Map each section from its file offset to its virtual address.
         // Sections may be smaller on disk than in memory (e.g. BSS); the
         // remainder stays zeroed from the mmap.
@@ -96,6 +103,7 @@ pub const PeImage = struct {
         return .{
             .data = image,
             .data_size = image_size,
+            .data_cache = cached,
             .hash = file_hash,
             .original = nth.optional_header.image_base,
             .reloc_va = reloc_dir.virtual_address,
@@ -330,6 +338,7 @@ test "relocation delta calculation" {
         .gpa = std.testing.allocator,
         .data = fake_image[0..],
         .data_size = fake_image.len,
+        .data_cache = null,
         .sections = &.{},
         .hash = 0,
         .original = original,
