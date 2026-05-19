@@ -63,4 +63,58 @@ pub fn build(b: *std.Build) void {
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_tests.step);
+
+    // Integration tests require an explicit -Dexe=path to ffxiv_dx11.exe to don't run automatically
+    const integration_step = b.step("integration", "Run integration tests against the game binary");
+    if (b.top_level_steps.contains("integration")) {
+        const exe = b.option([]const u8, "exe", "Path to ffxiv_dx11.exe for integration tests");
+        const opts = b.addOptions();
+        opts.addOption(?[]const u8, "exe_path", exe);
+
+        const integration_mod = b.createModule(.{
+            .root_source_file = b.path("tests/integration_e2e.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "daigoro", .module = lib_mod },
+                .{ .name = "build_options", .module = opts.createModule() },
+            },
+        });
+
+        // Add the Zig tests
+        const z_test = b.addTest(.{
+            .root_module = integration_mod,
+        });
+        const run_z = b.addRunArtifact(z_test);
+        integration_step.dependOn(&run_z.step);
+
+        // Add C tests
+        const c_test = b.addExecutable(.{
+            .name = "integration_e2e_c",
+            .root_module = b.createModule(.{
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+        c_test.addCSourceFile(.{
+            .file = b.path("tests/integration_e2e.c"),
+        });
+        c_test.addIncludePath(b.path("include"));
+        c_test.linkLibrary(lib);
+
+        // Needed for mkdtemp
+        c_test.root_module.addCMacro("_POSIX_C_SOURCE", "200809L");
+        if (target.result.os.tag == .macos) {
+            c_test.root_module.addCMacro("_DARWIN_C_SOURCE", "1");
+        }
+        if (exe) |exe_path| {
+            c_test.root_module.addCMacro("EXE_PATH", b.fmt("\"{s}\"", .{exe_path}));
+        } else {
+            // Define an extra macro so C code can check `#ifdef EXE_PATH_MISSING` and fail compilation properly
+            c_test.root_module.addCMacro("EXE_PATH_MISSING", "1");
+        }
+
+        const run_c = b.addRunArtifact(c_test);
+        integration_step.dependOn(&run_c.step);
+    }
 }
