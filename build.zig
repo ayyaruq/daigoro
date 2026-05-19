@@ -45,4 +45,12 @@ pub fn build(b: *std.Build) void {
 
     // Make the library file and docs available in zig-out/lib/
     b.installArtifact(lib);
+
+    // Unit tests
+    const tests = b.addTest(.{
+        .root_module = lib_mod,
+    });
+    const run_tests = b.addRunArtifact(tests);
+    const test_step = b.step("test", "Run unit tests");
+    test_step.dependOn(&run_tests.step);
 }
