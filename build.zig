@@ -1,6 +1,9 @@
 const std = @import("std");
 
 pub fn build(b: *std.Build) void {
+    const zon = @import("build.zig.zon");
+    const version = comptime try std.SemanticVersion.parse(zon.version);
+
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{
         .whitelist = &.{
@@ -37,6 +40,7 @@ pub fn build(b: *std.Build) void {
         .name = "daigoro",
         .linkage = .static,
         .root_module = lib_mod,
+        .version = version,
     });
 
     // The C header is not generated; it is maintained by hand alongside the Zig source and must be kept in sync manually.
