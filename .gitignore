@@ -1,0 +1,26 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.a
+*.so
+*.dylib
+
+# Editor/IDE - we allow only vscode
+.idea/
+
+# Editor - drop mise tool installs
+.vscode/mise-tools
+
+# MacOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[codz]
+*$py.class
+
+# Zig
+.zig-cache/
+zig-out/
+*.o
