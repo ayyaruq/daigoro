@@ -46,6 +46,16 @@ pub fn build(b: *std.Build) void {
     // Make the library file and docs available in zig-out/lib/
     b.installArtifact(lib);
 
+    // Install docs
+    const docs = b.addInstallDirectory(.{
+        .source_dir = lib.getEmittedDocs(),
+        .install_dir = .prefix,
+        .install_subdir = "docs",
+    });
+    const docs_step = b.step("docs", "Generate API documentation");
+    docs_step.dependOn(&docs.step);
+    b.getInstallStep().dependOn(docs_step);
+
     // Unit tests
     const tests = b.addTest(.{
         .root_module = lib_mod,
